@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=InvoiceDb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Backend/Invoice.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Username=postgres;Password=postgres;Database=InvoiceDb"
+      JWT__Secret: ${JWT_SECRET:?set JWT_SECRET in .env}
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost:8081}
+      EmailConfig__UserName: ${EMAIL_USERNAME:?set EMAIL_USERNAME in .env}
+      EmailConfig__Password: ${EMAIL_PASSWORD:?set EMAIL_PASSWORD in .env}
+            
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+  client:
+    build:
+      context: Frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "8081:80"
+
+volumes:
+  postgres_data:

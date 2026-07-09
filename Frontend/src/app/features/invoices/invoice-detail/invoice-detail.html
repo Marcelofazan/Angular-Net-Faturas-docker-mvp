@@ -1,0 +1,101 @@
+@if (loading()) {
+  <div class="page">
+    <p class="text-muted">{{ 'common.loading' | translate }}</p>
+  </div>
+} @else if (invoice(); as inv) {
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1 class="page-header__title">
+          {{ 'invoices.detail.subtitle' | translate }} - {{ format.date(inv.startDate) }} – {{ format.date(inv.endDate) }}
+        </h1>
+        <p class="page-header__subtitle">
+          @if (customer(); as c) {
+            <a [routerLink]="['/customers', c.id]">{{ c.name }}</a>
+          }
+        </p>
+      </div>
+      <div class="page-actions">
+        <button type="button" class="btn btn--secondary" [disabled]="exporting()" (click)="exportPdf()">
+          {{ exporting() ? ('invoices.detail.pdfButton.export' | translate) : ('invoices.detail.pdfButton.download' | translate) }}
+        </button>
+        @if (inv.status === 'Created') {
+          <a class="btn btn--secondary" [routerLink]="['/invoices', inv.id, 'edit']">{{ 'invoices.detail.alterButton' | translate }} </a>
+          <button type="button" class="btn btn--danger" (click)="remove()">{{ 'invoices.detail.deleteButton' | translate }}</button>
+        }
+        <button type="button" class="btn btn--secondary" (click)="archive()">{{ 'invoices.detail.fileButton' | translate }}</button>
+      </div>
+    </div>
+
+    <div class="grid grid--two">
+      <div class="card">
+        <h3>{{ 'invoices.detail.optionStatus' | translate }}</h3>
+        <div class="cluster">
+          <span class="badge badge--status-{{ inv.status.toLowerCase() }}">{{ ('invoiceStatus.' + inv.status.toLowerCase()) | translate }}</span>
+          <select
+            class="select"
+            style="max-width: 12rem"
+            [value]="inv.status"
+            [disabled]="updatingStatus()"
+            (change)="changeStatus($any($event.target).value)"
+          >
+            @for (status of statuses; track status) {
+              <option [value]="status">{{ ('invoiceStatus.' + status.toLowerCase()) | translate }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3> {{ 'invoices.detail.sum' | translate }}</h3>
+        <div style="font-size: 1.5rem; font-weight: 700">{{ format.currency(inv.totalSum, inv.currency) }}</div>
+        <p class="text-muted">{{ inv.rows.length }} {{ 'invoices.detail.sumServices' | translate }}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>{{ 'invoices.detail.itemDescription' | translate }}</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ 'invoices.detail.list.columns.service' | translate }}</th>
+            <th class="text-right">{{ 'invoices.detail.list.columns.amount' | translate }}</th>
+            <th class="text-right">{{ 'invoices.detail.list.columns.itemValue' | translate }}</th>
+            <th class="text-right">{{ 'invoices.detail.list.columns.sumItems' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of inv.rows; track row.id) {
+            <tr>
+              <td>{{ row.service }}</td>
+              <td class="text-right">{{ row.quantity }}</td>
+              <td class="text-right">{{ format.currency(row.rate, inv.currency) }}</td>
+              <td class="text-right">{{ format.currency(row.sum, inv.currency) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (inv.comment) {
+      <div class="card">
+        <h3>{{ 'invoices.detail.comment' | translate }}</h3>
+        <p>{{ inv.comment }}</p>
+      </div>
+    }
+
+    <div class="card">
+      <h3>{{ 'invoices.detail.metadata' | translate }}</h3>
+      <div class="grid grid--two">
+        <div>
+          <div class="text-muted">{{ 'invoices.detail.startPeriod' | translate }}</div>
+          <div>{{ format.dateTime(inv.createdAt) }}</div>
+        </div>
+        <div>
+          <div class="text-muted">{{ 'invoices.detail.endPeriod' | translate }}</div>
+          <div>{{ format.dateTime(inv.updatedAt) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
